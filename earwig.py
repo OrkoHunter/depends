@@ -211,19 +211,15 @@ def extract(package_name, downloaded_file, file_type):
         f = tarfile.open(downloaded_file)
         f.extractall()
         f.close()
-        os.chdir(downloaded_file.rstrip('.tar.gz'))
     elif file_type == "zip":
         f = zipfile.ZipFile(downloaded_file)
         f.extractall()
-        os.chdir(downloaded_file.rstrip('.zip'))
     elif file_type == "egg":
         f = zipfile.ZipFile(downloaded_file)
         f.extractall()
-        os.chdir(package_name)
     elif file_type == "whl":
         f = zipfile.ZipFile(downloaded_file)
         f.extractall()
-        os.chdir(downloaded_file.split("-")[0])
 
     return analyze(package_name, downloaded_file, file_type)
 
