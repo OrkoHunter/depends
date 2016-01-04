@@ -119,7 +119,7 @@ def execute():
     return modules
 
 
-def analyze(package_name, downloaded_file, file_type):
+def analyze(package_name):
     """Get and analyze data."""
     data = execute()
     try:
@@ -221,7 +221,7 @@ def extract(package_name, downloaded_file, file_type):
         f = zipfile.ZipFile(downloaded_file)
         f.extractall()
 
-    return analyze(package_name, downloaded_file, file_type)
+    return analyze(package_name)
 
 
 def main(package_name, dest="pypi"):
