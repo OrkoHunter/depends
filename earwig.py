@@ -1,5 +1,4 @@
 import glob
-import json
 import os
 import re
 import requests
@@ -14,7 +13,7 @@ def get_latest_version(package_name, dest="pypi"):
     if dest == "pypi":
         url = "https://pypi.python.org/pypi/"
         r = requests.get(url + package_name + "/json")
-        version = json.loads(r.text)["info"]["version"]
+        version = r.json()["info"]["version"]
     return version
 
 
@@ -23,7 +22,7 @@ def is_outdated(package_name, version, dest="pypi"):
     if dest == "pypi":
         url = "https://pypi.python.org/pypi/"
         r = requests.get(url + package_name + "/json")
-        new_version = json.loads(r.text)["info"]["version"]
+        new_version = r.json()["info"]["version"]
     return new_version > version
 
 
@@ -234,7 +233,7 @@ def main(package_name, dest="pypi"):
         file_url = "unknown"
         file_type = "unknown"
         try:
-            urls = [json.loads(r.text)["urls"][i]["url"]
+            urls = [r.json()["urls"][i]["url"]
                     for i in range(len(json.loads(r.text)["urls"]))]
         except ValueError as e:
             raise Exception("The package " + package_name +
