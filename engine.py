@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+"""The engine module of the depends app"""
+import codecs
 import glob
+import json
 import os
 import re
 import requests
@@ -7,13 +11,16 @@ import tarfile
 import tempfile
 import zipfile
 
+import wget
+
 
 def get_latest_version(package_name, dest="pypi"):
     """Returns the latest version of the release on pypi."""
     if dest == "pypi":
         url = "https://pypi.python.org/pypi/"
         r = requests.get(url + package_name + "/json")
-        version = r.json()["info"]["version"]
+        r.encoding = 'utf-8'
+        version = json.loads(r.text)["info"]["version"]
     return version
 
 
@@ -22,7 +29,8 @@ def is_outdated(package_name, version, dest="pypi"):
     if dest == "pypi":
         url = "https://pypi.python.org/pypi/"
         r = requests.get(url + package_name + "/json")
-        new_version = r.json()["info"]["version"]
+        r.encoding = 'utf-8'
+        new_version = json.loads(r.text)["info"]["version"]
     return new_version > version
 
 
@@ -42,7 +50,7 @@ def execute():
     files_list = list()
 
     # Clean up the empty data
-    for path, files in files_dict.items():
+    for path, files in list(files_dict.items()):
         if len(files) == 0:
             del files_dict[path]
         else:
@@ -52,11 +60,11 @@ def execute():
                     pass
                 else:
                     files_list.append(path + "/" + i)
-
+    #'''
     modules = dict()
 
     for module in files_list:
-        f = open(module)
+        f = codecs.open(module, encoding='utf-8')
         docstring = False
         for line in f.readlines():
             if line.find("\"\"\"") != -1 and line.count("\"\"\"")%2!=0:
@@ -118,11 +126,11 @@ def execute():
     return modules
 
 
-def analyze(package_name):
+def analyze(package_name, downloaded_file, file_type):
     """Get and analyze data."""
     data = execute()
     try:
-        del data[package_name]
+        del data[package_name.lower()]
     except:
         pass
 
@@ -220,7 +228,7 @@ def extract(package_name, downloaded_file, file_type):
         f = zipfile.ZipFile(downloaded_file)
         f.extractall()
 
-    return analyze(package_name)
+    return analyze(package_name, downloaded_file, file_type)
 
 
 def main(package_name, dest="pypi"):
@@ -229,15 +237,16 @@ def main(package_name, dest="pypi"):
     if dest == "pypi":
         url = "https://pypi.python.org/pypi/"
         r = requests.get(url + package_name + "/json")
+        r.encoding = 'utf-8'
 
         file_url = "unknown"
         file_type = "unknown"
         try:
-            urls = [r.json()["urls"][i]["url"]
+            urls = [json.loads(r.text)["urls"][i]["url"]
                     for i in range(len(json.loads(r.text)["urls"]))]
         except ValueError as e:
             raise Exception("The package " + package_name +
-                            "does not exist over pypi.")
+                            " does not exist over pypi.")
 
         # First check for a tarball if it is available
         for url in urls:
@@ -283,4 +292,9 @@ def main(package_name, dest="pypi"):
             big_data = extract(package_name, downloaded_file, file_type)
             os.chdir(currdir)
             shutil.rmtree(tempdir)
+            info = json.loads(r.text)
+            big_data['info'] = dict()
+            big_data['info']['version'] = info['info']['version']
+            big_data['info']['file_type'] = file_type
+            big_data['info']['source'] = 'pypi'
             return big_data
